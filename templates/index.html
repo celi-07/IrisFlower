@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iris Flower Species Classifier</title>
+    <style>
+        /* Streamlit Dark Mode styling */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Source Sans Pro", sans-serif;
+            background-color: #0e1117;
+            margin: 0;
+            padding: 0;
+            color: #fafafa;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+            background-color: #0e1117;
+        }
+
+        .sidebar {
+            background-color: #262730;
+            width: 21rem;
+            padding: 1rem;
+            border-right: 1px solid #464853;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            top: 0;
+            left: 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: #262730;
+            border: 1px solid #464853;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            color: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: #464853;
+        }
+
+        .sidebar-toggle.collapsed {
+            left: 1rem;
+        }
+
+        .sidebar-content {
+            padding-top: 4rem;
+        }
+
+        .content {
+            margin-left: 21rem;
+            padding: 5rem 1rem 10rem;
+            flex: 1;
+            max-width: calc(100% - 21rem);
+            background-color: #0e1117;
+            transition: margin-left 0.3s ease, max-width 0.3s ease;
+        }
+
+        .content.full-width {
+            margin-left: 0;
+            max-width: 100%;
+        }
+
+        h1 {
+            color: #fafafa;
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            line-height: 1.2;
+        }
+
+        h2 {
+            color: #fafafa;
+            font-size: 1.375rem;
+            font-weight: 600;
+            margin: 2rem 0 0.5rem 0;
+            line-height: 1.2;
+        }
+
+        h3 {
+            color: #fafafa;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            line-height: 1.2;
+        }
+
+        .description {
+            color: #fafafa;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .sidebar h3 {
+            color: #fafafa;
+            font-size: 1rem;
+            margin: 0 0 2rem 0;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .slider-container {
+            margin-bottom: 3.5rem;
+        }
+
+        .slider-label {
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 400;
+            color: #fafafa;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            margin: 2rem 0 1rem 0;
+            padding: 0 9px;
+        }
+
+        .slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+            background-image: linear-gradient(#ff4b4b, #ff4b4b);
+            background-size: 0% 100%;
+            background-repeat: no-repeat;
+            transition: background-size 0.1s ease;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #ff4b4b;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            position: relative;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #ff4b4b;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Firefox specific styling */
+        .slider::-moz-range-track {
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .slider::-moz-range-progress {
+            background: #ff4b4b;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .slider-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .slider-value {
+            position: absolute;
+            top: -2rem;
+            color: #fafafa;
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 1;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(38, 39, 48, 0.9);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #464853;
+            transform: translateX(-20%);
+        }
+
+        .dataframe {
+            border: 1px solid #464853;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            margin: 1rem 0;
+            background: #262730;
+            font-size: 0.875rem;
+        }
+
+        .dataframe table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .dataframe th {
+            background-color: #464853;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #464853;
+            color: #fafafa;
+            font-size: 0.875rem;
+        }
+
+        .dataframe td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #464853;
+            color: #fafafa;
+            font-size: 0.875rem;
+        }
+
+        .dataframe tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .prediction-text {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #fafafa;
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+
+        .checkbox-container {
+            margin: 1rem 0;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 0.5rem;
+            transform: scale(1.0);
+            accent-color: #ff4b4b;
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1rem;
+            color: #fafafa;
+            font-weight: 400;
+        }
+
+        .raw-data {
+            display: none;
+            max-height: 400px;
+            overflow: auto;
+            margin-top: 1rem;
+        }
+
+        /* Custom scrollbar styling */
+        .raw-data::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .raw-data::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .raw-data::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .raw-data::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Firefox scrollbar styling */
+        .raw-data {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        .loading {
+            color: #a0a0a0;
+            font-style: italic;
+        }
+
+        .model-performance {
+            margin: 2rem 0 1rem 0;
+        }
+
+        .model-performance-text {
+            color: #fafafa;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }
+
+        .accuracy-text {
+            margin: 1rem 0;
+        }
+
+        /* Remove any default margins from paragraphs */
+        p {
+            margin: 0;
+        }
+
+        /* Style for strong text */
+        strong {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Sidebar Toggle Button -->
+        <div class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18l6-6-6-6"/>
+            </svg>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-content">
+                <h3>Input Flower Features</h3>
+                
+                <div class="slider-container">
+                    <label class="slider-label">Sepal Length (cm)</label>
+                    <div class="slider-wrapper">
+                        <div class="slider-value" id="sepal_length_value">5.4</div>
+                        <input type="range" id="sepal_length" class="slider" min="4.3" max="7.9" step="0.1" value="5.4">
+                        <div class="slider-info">
+                            <span>4.3</span>
+                            <span>7.9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">Sepal Width (cm)</label>
+                    <div class="slider-wrapper">
+                        <div class="slider-value" id="sepal_width_value">3.4</div>
+                        <input type="range" id="sepal_width" class="slider" min="2.0" max="4.4" step="0.1" value="3.4">
+                        <div class="slider-info">
+                            <span>2.0</span>
+                            <span>4.4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">Petal Length (cm)</label>
+                    <div class="slider-wrapper">
+                        <div class="slider-value" id="petal_length_value">1.3</div>
+                        <input type="range" id="petal_length" class="slider" min="1.0" max="6.9" step="0.1" value="1.3">
+                        <div class="slider-info">
+                            <span>1.0</span>
+                            <span>6.9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slider-container">
+                    <label class="slider-label">Petal Width (cm)</label>
+                    <div class="slider-wrapper">
+                        <div class="slider-value" id="petal_width_value">0.2</div>
+                        <input type="range" id="petal_width" class="slider" min="0.1" max="2.5" step="0.1" value="0.2">
+                        <div class="slider-info">
+                            <span>0.1</span>
+                            <span>2.5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content" id="content">
+            <h1>🌷 Iris Flower Species Classifier</h1>
+            <div class="description">
+                This app uses a K-Nearest Neighbors model to predict the species of an Iris flower based on its sepal and petal measurements.
+                Use the sliders in the sidebar to provide the input features.
+            </div>
+
+            <h2>Your Input:</h2>
+            <div class="dataframe">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>sepal_length</th>
+                            <th>sepal_width</th>
+                            <th>petal_length</th>
+                            <th>petal_width</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="display_sepal_length">5.4</td>
+                            <td id="display_sepal_width">3.4</td>
+                            <td id="display_petal_length">1.3</td>
+                            <td id="display_petal_width">0.2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Prediction:</h2>
+            <div class="prediction-text" id="prediction_result">
+                <span class="loading">Making prediction...</span>
+            </div>
+
+            <h2>Prediction Probability:</h2>
+            <div class="description">This shows the model's confidence for each species:</div>
+            <div class="dataframe">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>setosa</th>
+                            <th>versicolor</th>
+                            <th>virginica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Probability</strong></td>
+                            <td id="prob_setosa">-</td>
+                            <td id="prob_versicolor">-</td>
+                            <td id="prob_virginica">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Model Performance</h2>
+            <div class="model-performance-text" id="accuracy_info">Loading model accuracy...</div>
+            <div class="model-performance-text">Want to see the raw data?</div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="show_data" onchange="toggleRawData()">
+                <label for="show_data">Show Raw Iris Data</label>
+            </div>
+
+            <div class="raw-data" id="raw_data_container">
+                <div class="dataframe">
+                    <div id="raw_data_table">Loading data...</div>
+                </div>
+            </div>
+            <div id="data_summary" style="margin-top: 0.5rem; font-size: 0.875rem; color: #888;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            const toggle = document.getElementById('sidebar-toggle');
+            
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('full-width');
+            toggle.classList.toggle('collapsed');
+        }
+
+        // Update slider values and make predictions
+        const updateSliderValue = (sliderId, displayId) => {
+            const slider = document.getElementById(sliderId);
+            const display = document.getElementById(displayId);
+            const tableDisplay = document.getElementById('display_' + sliderId);
+            
+            // Function to update progress bar and tooltip position
+            const updateProgressAndTooltip = () => {
+                const percentage = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+                slider.style.backgroundSize = percentage + '% 100%';
+                
+                // Calculate the exact position of the slider thumb
+                // The slider has 9px padding on each side, so we need to account for that
+                const sliderRect = slider.getBoundingClientRect();
+                const thumbWidth = 18; // Width of the thumb
+                const padding = 9; // Padding on each side
+                
+                // Calculate the available slider track width (excluding padding)
+                const trackWidth = sliderRect.width - (padding * 2);
+                
+                // Calculate thumb center position relative to the slider wrapper
+                const thumbCenterPosition = padding + (percentage / 100) * trackWidth;
+                
+                // Position tooltip centered above the thumb
+                display.style.left = thumbCenterPosition + 'px';
+            }
+            
+            // Initial progress update
+            updateProgressAndTooltip();
+            
+            slider.addEventListener('input', () => {
+                display.textContent = this.value;
+                tableDisplay.textContent = this.value;
+                updateProgressAndTooltip();
+                makePrediction();
+            });
+            
+            // Update tooltip position on window resize
+            window.addEventListener('resize', updateProgressAndTooltip);
+        }
+
+        // Initialize all sliders
+        updateSliderValue('sepal_length', 'sepal_length_value');
+        updateSliderValue('sepal_width', 'sepal_width_value');
+        updateSliderValue('petal_length', 'petal_length_value');
+        updateSliderValue('petal_width', 'petal_width_value');
+
+        // Make prediction
+        const makePrediction = async () => {
+            const data = {
+                sepal_length: parseFloat(document.getElementById('sepal_length').value),
+                sepal_width: parseFloat(document.getElementById('sepal_width').value),
+                petal_length: parseFloat(document.getElementById('petal_length').value),
+                petal_width: parseFloat(document.getElementById('petal_width').value)
+            };
+
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            document.getElementById('prediction_result').innerHTML =
+                `The model predicts the flower is a <strong>${result.prediction}</strong>.`;
+
+            document.getElementById('prob_setosa').textContent = result.probabilities.setosa.toFixed(4);
+            document.getElementById('prob_versicolor').textContent = result.probabilities.versicolor.toFixed(4);
+            document.getElementById('prob_virginica').textContent = result.probabilities.virginica.toFixed(4);
+
+            document.getElementById('accuracy_info').innerHTML =
+                `The model was trained on the Iris dataset and has an accuracy of <strong>${result.accuracy * 100}%</strong> on the test set.`;
+        }
+
+
+        // Toggle raw data display
+        const toggleRawData = () => {
+            const checkbox = document.getElementById('show_data');
+            const container = document.getElementById('raw_data_container');
+            
+            if (checkbox.checked) {
+                container.style.display = 'block';
+                loadRawData();
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // Load raw data
+        const loadRawData = async () => {
+            const response = await fetch('/data');
+            const result = await response.json();
+            console.log(result);
+
+            const columns = result.columns;
+            const data = result.data;
+
+            let tableHtml = '<table><thead><tr>';
+            columns.forEach(col => {
+                tableHtml += `<th>${col}</th>`;
+            });
+            tableHtml += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                tableHtml += '<tr>';
+                columns.forEach(col => {
+                    tableHtml += `<td>${row[col]}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            tableHtml += '</tbody></table>';
+
+            document.getElementById('raw_data_table').innerHTML = tableHtml;
+            
+            const summaryText = `${result.total_rows} rows × ${result.total_columns} columns`;
+            document.getElementById('data_summary').textContent = summaryText;
+        }
+
+        // Make initial prediction when page loads
+        window.addEventListener('load', () => {
+            makePrediction();
+        });
+    </script>
+</body>
+</html>

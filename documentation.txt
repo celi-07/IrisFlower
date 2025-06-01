@@ -1,0 +1,27 @@
+Flask Iris Classifier Setup Instructions
+
+Project Structure
+The project is structured in the following way:
+IrisFlower/ 
+│
+├── app.py                # Main Flask application
+├── templates/
+│   └── index.html        # HTML template
+└── requirements.txt      # Python dependencies
+
+
+How to run?
+1. Create .venv if you haven't
+py -m venv .venv
+
+2. Go to your .venv (Activate venv)
+.venv\Scripts\activate
+
+3. Download necessary packages
+pip install -r requirements.txt
+
+4. If failed, download it manually
+pip install Flask pandas scikit-learn kagglehub
+
+5. Run the project
+flask run
