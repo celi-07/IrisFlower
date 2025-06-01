@@ -578,12 +578,15 @@
         const toggleRawData = () => {
             const checkbox = document.getElementById('show_data');
             const container = document.getElementById('raw_data_container');
+            const dataSummary = document.getElementById('data_summary');
             
             if (checkbox.checked) {
                 container.style.display = 'block';
+                dataSummary.style.display = 'block';
                 loadRawData();
             } else {
                 container.style.display = 'none';
+                dataSummary.style.display = 'none';
             }
         }
 
