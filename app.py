@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 import kagglehub
+import os
 
 app = Flask(__name__)
 
@@ -18,7 +19,7 @@ def load_data():
 
     # Load the CSV file
     url = kagglehub.dataset_download("samybaladram/iris-dataset-extended")
-    iris_df = pd.read_csv(url + '\\iris_extended.csv')
+    iris_df = pd.read_csv(os.path.join(url, 'iris_extended.csv'))
     iris_df = iris_df[['species', 'sepal_length', 'sepal_width', 'petal_length', 'petal_width']]
 
     # Prepare the data
