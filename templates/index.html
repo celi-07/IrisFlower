@@ -519,6 +519,7 @@
 
             <h2>Model Performance</h2>
             <div class="model-performance-text" id="accuracy_info">Loading model accuracy...</div>
+            <div class="model-performance-text" id="latency_info" style="color:#a0a0a0; font-size:0.95em;">Loading prediction time...</div>
             <div class="model-performance-text">Want to see the raw data?</div>
             <div class="checkbox-container">
                 <input type="checkbox" id="show_data" onchange="toggleRawData()">
@@ -635,6 +636,7 @@
                 petal_width: parseFloat(document.getElementById('petal_width').value)
             };
 
+            const start = performance.now();
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
@@ -645,6 +647,8 @@
                 });
 
                 const result = await response.json();
+                const end = performance.now();
+                const latency = end - start;
 
                 document.getElementById('prediction_result').innerHTML =
                     `The model predicts the flower is a <strong>${result.prediction}</strong>.`;
@@ -654,10 +658,15 @@
 
                 document.getElementById('accuracy_info').innerHTML =
                     `The model was trained on the Iris dataset and has an accuracy of <strong>${(result.accuracy * 100).toFixed(1)}%</strong> on the test set.`;
+
+                document.getElementById('latency_info').innerHTML =
+                    `Prediction time: <strong>${latency.toFixed(1)} ms</strong>`;
             } catch (error) {
                 console.error('Error making prediction:', error);
                 document.getElementById('prediction_result').innerHTML =
                     '<span class="loading">Error connecting to prediction service</span>';
+                document.getElementById('latency_info').innerHTML =
+                    'Prediction time: <span style="color:#ff4b4b;">Error</span>';
             }
         }
 
