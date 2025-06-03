@@ -334,6 +334,71 @@
             margin: 1rem 0;
         }
 
+        .probability-bar-container {
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: #262730;
+            border-radius: 0.5rem;
+            border: 1px solid #464853;
+        }
+
+        .probability-bar {
+            display: flex;
+            align-items: center;
+            margin: 0.75rem 0;
+            font-size: 0.875rem;
+        }
+
+        .probability-label {
+            width: 80px;
+            color: #fafafa;
+            font-weight: 500;
+            margin-right: 1rem;
+        }
+
+        .probability-bar-bg {
+            flex: 1;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            margin-right: 0.75rem;
+        }
+
+        .probability-bar-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .probability-bar-fill.setosa {
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+        }
+
+        .probability-bar-fill.versicolor {
+            background: linear-gradient(90deg, #4ecdc4, #6ed7d0);
+        }
+
+        .probability-bar-fill.virginica {
+            background: linear-gradient(90deg, #9b59b6, #b578c7);
+        }
+
+        .probability-value {
+            color: #fafafa;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: right;
+        }
+
         /* Remove any default margins from paragraphs */
         p {
             margin: 0;
@@ -449,27 +514,8 @@
             </div>
 
             <h2>Prediction Probability:</h2>
-            <div class="description">This shows the model's confidence for each species:</div>
-            <div class="dataframe">
-                <table>
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>setosa</th>
-                            <th>versicolor</th>
-                            <th>virginica</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Probability</strong></td>
-                            <td id="prob_setosa">-</td>
-                            <td id="prob_versicolor">-</td>
-                            <td id="prob_virginica">-</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <div class="description">Visual representation of the model's confidence for each species:</div>
+            <div id="probability_chart" style="margin: 1rem 0;"></div>
 
             <h2>Model Performance</h2>
             <div class="model-performance-text" id="accuracy_info">Loading model accuracy...</div>
@@ -530,7 +576,7 @@
             // Initial progress update
             updateProgressAndTooltip();
             
-            slider.addEventListener('input', () => {
+            slider.addEventListener('input', function() {
                 display.textContent = this.value;
                 tableDisplay.textContent = this.value;
                 updateProgressAndTooltip();
@@ -547,7 +593,40 @@
         updateSliderValue('petal_length', 'petal_length_value');
         updateSliderValue('petal_width', 'petal_width_value');
 
-        // Make prediction
+        // Update probability chart with visual bars
+        const updateProbabilityChart = (probabilities) => {
+            const chartContainer = document.getElementById('probability_chart');
+            
+            const species = [
+                { name: 'Setosa 🌸', key: 'setosa', class: 'setosa' },
+                { name: 'Versicolor 🌼', key: 'versicolor', class: 'versicolor' },
+                { name: 'Virginica 🌺', key: 'virginica', class: 'virginica' }
+            ];
+            
+            let chartHtml = '<div class="probability-bar-container">';
+            
+            species.forEach(sp => {
+                const probability = probabilities[sp.key] || 0;
+                const percentage = (probability * 100).toFixed(1);
+                
+                chartHtml += `
+                    <div class="probability-bar">
+                        <div class="probability-label">${sp.name}</div>
+                        <div class="probability-bar-bg">
+                            <div class="probability-bar-fill ${sp.class}" style="width: ${percentage}%">
+                                ${percentage > 15 ? percentage + '%' : ''}
+                            </div>
+                        </div>
+                        <div class="probability-value">${percentage}%</div>
+                    </div>
+                `;
+            });
+            
+            chartHtml += '</div>';
+            chartContainer.innerHTML = chartHtml;
+        }
+
+        // Make prediction using real API
         const makePrediction = async () => {
             const data = {
                 sepal_length: parseFloat(document.getElementById('sepal_length').value),
@@ -556,27 +635,31 @@
                 petal_width: parseFloat(document.getElementById('petal_width').value)
             };
 
-            const response = await fetch('/predict', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
 
-            const result = await response.json();
+                const result = await response.json();
 
-            document.getElementById('prediction_result').innerHTML =
-                `The model predicts the flower is a <strong>${result.prediction}</strong>.`;
+                document.getElementById('prediction_result').innerHTML =
+                    `The model predicts the flower is a <strong>${result.prediction}</strong>.`;
 
-            document.getElementById('prob_setosa').textContent = result.probabilities.setosa.toFixed(4);
-            document.getElementById('prob_versicolor').textContent = result.probabilities.versicolor.toFixed(4);
-            document.getElementById('prob_virginica').textContent = result.probabilities.virginica.toFixed(4);
+                // Update the visual probability chart
+                updateProbabilityChart(result.probabilities);
 
-            document.getElementById('accuracy_info').innerHTML =
-                `The model was trained on the Iris dataset and has an accuracy of <strong>${result.accuracy * 100}%</strong> on the test set.`;
+                document.getElementById('accuracy_info').innerHTML =
+                    `The model was trained on the Iris dataset and has an accuracy of <strong>${(result.accuracy * 100).toFixed(1)}%</strong> on the test set.`;
+            } catch (error) {
+                console.error('Error making prediction:', error);
+                document.getElementById('prediction_result').innerHTML =
+                    '<span class="loading">Error connecting to prediction service</span>';
+            }
         }
-
 
         // Toggle raw data display
         const toggleRawData = () => {
@@ -596,32 +679,38 @@
 
         // Load raw data
         const loadRawData = async () => {
-            const response = await fetch('/data');
-            const result = await response.json();
-            console.log(result);
+            try {
+                const response = await fetch('/data');
+                const result = await response.json();
+                console.log(result);
 
-            const columns = result.columns;
-            const data = result.data;
+                const columns = result.columns;
+                const data = result.data;
 
-            let tableHtml = '<table><thead><tr>';
-            columns.forEach(col => {
-                tableHtml += `<th>${col}</th>`;
-            });
-            tableHtml += '</tr></thead><tbody>';
-
-            data.forEach(row => {
-                tableHtml += '<tr>';
+                let tableHtml = '<table><thead><tr>';
                 columns.forEach(col => {
-                    tableHtml += `<td>${row[col]}</td>`;
+                    tableHtml += `<th>${col}</th>`;
                 });
-                tableHtml += '</tr>';
-            });
-            tableHtml += '</tbody></table>';
+                tableHtml += '</tr></thead><tbody>';
 
-            document.getElementById('raw_data_table').innerHTML = tableHtml;
-            
-            const summaryText = `${result.total_rows} rows × ${result.total_columns} columns`;
-            document.getElementById('data_summary').textContent = summaryText;
+                data.forEach(row => {
+                    tableHtml += '<tr>';
+                    columns.forEach(col => {
+                        tableHtml += `<td>${row[col]}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                });
+                tableHtml += '</tbody></table>';
+
+                document.getElementById('raw_data_table').innerHTML = tableHtml;
+                
+                const summaryText = `${result.total_rows} rows × ${result.total_columns} columns`;
+                document.getElementById('data_summary').textContent = summaryText;
+            } catch (error) {
+                console.error('Error loading raw data:', error);
+                document.getElementById('raw_data_table').innerHTML = 'Error loading data';
+                document.getElementById('data_summary').textContent = 'Unable to load data summary';
+            }
         }
 
         // Make initial prediction when page loads
